@@ -10,6 +10,8 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/ugeebee/root-pay/backend/internal/database"
+	"github.com/ugeebee/root-pay/backend/internal/handlers"
+	"github.com/ugeebee/root-pay/backend/internal/sse"
 )
 
 func main() {
@@ -18,8 +20,9 @@ func main() {
 	}
 	dbPool := database.InitDB()
 	defer dbPool.Close()
+	sse.InitHub()
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)   
+	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "https://xyz.com"},
@@ -31,12 +34,10 @@ func main() {
 		r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
 			w.Write([]byte("Root-pay API is live"))
 		})
-		
-		// The API architecture we designed:
-		// r.Post("/tips", handlers.CreateTip)
-		// r.Get("/tips", handlers.GetTip)
-		// r.Get("/tips/stream", handlers.SSEWait)
-		// r.Post("/webhooks/upi", handlers.UPIWebhook)
+		r.Post("/tips", handlers.CreateTip)
+		//r.Get("/tips", handlers.GetTip)
+		r.Get("/tips/stream", handlers.SSEWait)
+		r.Post("/webhooks/upi", handlers.UPIWebhook)
 		// r.Get("/ws/alerts", handlers.OBSWebSocket)
 	})
 	port := "8080"
