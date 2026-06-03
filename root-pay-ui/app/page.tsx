@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { HeartHandshake, User, Zap, CircleUserRound, Clock, MonitorOff } from 'lucide-react';
+import Link from 'next/link';
+import { HeartHandshake, User, Zap, CircleUserRound, Clock, MonitorOff, LifeBuoy} from 'lucide-react';
 
 export default function TipPage() {
   const router = useRouter();
@@ -115,8 +116,16 @@ export default function TipPage() {
           <div className="text-xl font-bold tracking-tight text-[#6D28D9]">notBruce</div>
           <span className="text-sm font-medium text-gray-500">Clips</span>
         </div>
-        <div className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-400">
-          <CircleUserRound size={20} />
+        
+        <div className="flex items-center gap-6">
+          {/* THE NEW SUPPORT BUTTON */}
+          <Link href="/support" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+            <LifeBuoy size={18} /> Support
+          </Link>
+          
+          <div className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-400">
+            <CircleUserRound size={20} />
+          </div>
         </div>
       </nav>
 
