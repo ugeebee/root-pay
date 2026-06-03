@@ -2,6 +2,7 @@ package sse
 
 import (
 	"sync"
+	"time"
 )
 
 type Hub struct {
@@ -13,10 +14,33 @@ type Hub struct {
 // PaymentHub is our global switchboard.
 var PaymentHub *Hub
 
-// InitHub initializes the map. We will call this in main.go
+// InitHub initializes the map and kicks off the global heartbeat worker.
 func InitHub() {
 	PaymentHub = &Hub{
 		clients: make(map[string]chan string),
+	}
+
+	// Spin up the single global heartbeat worker loop in the background
+	go PaymentHub.startHeartbeatWorker()
+}
+
+// startHeartbeatWorker keeps all active Cloudflare/AWS connections alive.
+func (h *Hub) startHeartbeatWorker() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		h.mu.RLock()
+		// Broadcast the invisible SSE comment to every open connection at once
+		for _, ch := range h.clients {
+			select {
+			case ch <- ": keepalive\n\n":
+			default:
+				// If a browser tab is lagging or dead and its channel is full,
+				// we skip it so one slow user doesn't stall the entire server.
+			}
+		}
+		h.mu.RUnlock()
 	}
 }
 
@@ -30,8 +54,8 @@ func (h *Hub) Register(serverKey string) chan string {
 		close(oldChan)
 	}
 
-	// We use a buffered channel of size 1 so the sender doesn't get blocked
-	newChan := make(chan string, 1)
+	// Increased buffer size to 5 to safely hold heartbeats and payment events simultaneously
+	newChan := make(chan string, 5)
 	h.clients[serverKey] = newChan
 
 	return newChan
@@ -43,6 +67,8 @@ func (h *Hub) Unregister(serverKey string) {
 	defer h.mu.Unlock()
 
 	if ch, exists := h.clients[serverKey]; exists {
+		// Note: Depending on your architecture, ensure you don't panic on double closing.
+		// Checking existence prevents major issues.
 		close(ch)
 		delete(h.clients, serverKey)
 	}

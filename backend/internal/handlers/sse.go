@@ -41,11 +41,19 @@ func SSEWait(w http.ResponseWriter, r *http.Request) {
 				return // Channel was closed internally
 			}
 
+			// Check if it's a heartbeat comment (starts with a colon)
+			if len(msg) > 0 && msg[0] == ':' {
+				// Write the raw heartbeat comment directly (already contains \n\n from the hub)
+				fmt.Fprint(w, msg)
+				flusher.Flush()
+				continue // Keep the loop open! Do not return.
+			}
+
 			// SSE Protocol dictates payloads must start with "data: " and end with "\n\n"
 			fmt.Fprintf(w, "data: %s\n\n", msg)
 			flusher.Flush()
 
-			// Once the payment succeeds, we can safely kill this connection
+			// Once the actual payment succeeds, we can safely kill this connection
 			return
 
 		case <-r.Context().Done():
