@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 	"github.com/ugeebee/root-pay/backend/internal/eventbus"
 	"github.com/ugeebee/root-pay/backend/internal/handlers"
@@ -15,6 +16,9 @@ import (
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, relying on system environment variables")
+	}
 	// 1. Initialize global SSE Hub
 	sse.InitHub()
 

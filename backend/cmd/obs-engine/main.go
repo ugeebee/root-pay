@@ -7,12 +7,16 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 	"github.com/ugeebee/root-pay/backend/internal/eventbus"
 	"github.com/ugeebee/root-pay/backend/internal/models"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, relying on system environment variables")
+	}
 	nc := eventbus.Connect()
 	defer nc.Close()
 

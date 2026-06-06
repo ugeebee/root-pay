@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/ugeebee/root-pay/backend/internal/database"
 	"github.com/ugeebee/root-pay/backend/internal/eventbus"
 	"github.com/ugeebee/root-pay/backend/internal/models"
@@ -23,6 +24,9 @@ type IncomingProxyPayload struct {
 }
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, relying on system environment variables")
+	}
 	database.InitDB() // Initialize DB connection
 
 	server := &IngestionServer{
