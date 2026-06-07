@@ -13,7 +13,8 @@ function CheckoutGateway() {
   const [paymentData, setPaymentData] = useState<{ upiDeeplink: string } | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID' | 'ERROR'>('PENDING');
 
-  const BACKEND_URL = 'http://localhost:8080/api';
+  // 1. UPDATED PORT: Pointing to 8082 where your SSE microservice is running
+  const BACKEND_URL = 'http://localhost:8082/api';
 
   useEffect(() => {
     if (!clientKey) {
@@ -35,7 +36,10 @@ function CheckoutGateway() {
     if (!paymentData || paymentStatus !== 'PENDING' || !clientKey) return;
 
     console.log(`📡 Opening SSE channel for client_key: ${clientKey}`);
-    // Connect directly using the client_key generated on the frontend
+    
+    // 2. CONNECTION URL
+    // This resolves to http://localhost:8082/api/tips/stream?client_key=...
+    // If your backend still has the "v1" prefix, change this to: `${BACKEND_URL}/v1/tips/stream?client_key=${clientKey}`
     const eventSource = new EventSource(`${BACKEND_URL}/tips/stream?client_key=${clientKey}`);
 
     eventSource.onmessage = (event) => {
@@ -51,7 +55,11 @@ function CheckoutGateway() {
       }
     };
 
-    eventSource.onerror = () => eventSource.close();
+    eventSource.onerror = (err) => {
+      console.error('SSE connection failed:', err);
+      eventSource.close();
+    };
+
     return () => eventSource.close();
   }, [paymentData, paymentStatus, clientKey]);
 
