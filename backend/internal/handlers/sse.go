@@ -27,7 +27,6 @@ func SSEWait(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
 
-	// Register using client_key
 	msgChan := sse.PaymentHub.Register(clientKey)
 	defer sse.PaymentHub.Unregister(clientKey)
 

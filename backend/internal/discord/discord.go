@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// Embed structures for Discord's webhook API
 type WebhookPayload struct {
 	Embeds []Embed `json:"embeds"`
 }
@@ -28,7 +27,6 @@ type Field struct {
 	Inline bool   `json:"inline"`
 }
 
-// SendSupportTicket formats the user's issue and sends it to your moderation channel
 func SendSupportTicket(clientKey, upiID, issue string) error {
 	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
 	if webhookURL == "" {
@@ -38,7 +36,7 @@ func SendSupportTicket(clientKey, upiID, issue string) error {
 	payload := WebhookPayload{
 		Embeds: []Embed{
 			{
-				Title:       "🚨 New Support Ticket",
+				Title:       "New Support Ticket",
 				Description: issue,
 				Color:       15548997, // Red highlight color
 				Timestamp:   time.Now().Format(time.RFC3339),
@@ -67,8 +65,6 @@ func SendSupportTicket(clientKey, upiID, issue string) error {
 
 	return nil
 }
-
-// Add this function to the bottom of your existing internal/discord/discord.go file
 
 func SendMessage(content string) error {
 	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")

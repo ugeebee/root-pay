@@ -23,7 +23,7 @@ type IngestionServer struct {
 	nc *nats.Conn
 }
 
-type IncomingProxyPayload struct {
+type IncomingPayload struct {
 	ClientKey string `json:"client_key"`
 }
 
@@ -31,9 +31,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on system environment variables")
 	}
-
 	database.InitDB()
-
 	server := &IngestionServer{
 		nc: eventbus.Connect(),
 	}
@@ -50,22 +48,17 @@ func main() {
 	}))
 
 	r.Route("/api", func(r chi.Router) {
-		// 1. The Frontend creates the tip here
 		r.Post("/tips", handlers.CreateTip)
-
-		// 2. Razorpay/Proxy sends the payment success here
-		r.Post("/webhooks/upi", server.handleProxyWebhook)
-
-		// 3. Support Tickets
+		r.Post("/webhooks/upi", server.handleWebhook)
 		r.Post("/support", handlers.SubmitSupportTicket)
 	})
 
-	log.Println("Ingestion API Service listening on :8080...")
+	log.Println("Ingestion API live on :8081")
 	log.Fatal(http.ListenAndServe(":8081", r))
 }
 
-func (s *IngestionServer) handleProxyWebhook(w http.ResponseWriter, r *http.Request) {
-	var req IncomingProxyPayload
+func (s *IngestionServer) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	var req IncomingPayload
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return

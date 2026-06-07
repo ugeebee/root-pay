@@ -25,18 +25,15 @@ func main() {
 	_, err := nc.Subscribe("tips.processed", func(m *nats.Msg) {
 		var event models.TipEvent
 		json.Unmarshal(m.Data, &event)
-
-		// IGNORE SAFE TIPS
 		if !event.IsNSFW {
 			return
 		}
 
 		log.Printf("[MODERATION] Flagged tip routed to Discord: %s", event.ClientKey)
 
-		warningMsg := fmt.Sprintf("🚨 **NSFW Tip Blocked!**\nUser: %s\nAmount: %.2f\nMessage: %s",
+		warningMsg := fmt.Sprintf("**NSFW Tip Blocked!**\nUser: %s\nAmount: %.2f\nMessage: %s",
 			event.Name, event.Amount, event.Message)
 
-		// Use the new package-level function
 		discord.SendMessage(warningMsg)
 	})
 

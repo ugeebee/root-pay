@@ -23,16 +23,11 @@ func main() {
 	_, err := nc.Subscribe("tips.processed", func(m *nats.Msg) {
 		var event models.TipEvent
 		json.Unmarshal(m.Data, &event)
-
-		// DROP UNSAFE TIPS
 		if event.IsNSFW {
 			log.Printf("[OBS] Dropped flagged payload for %s", event.ClientKey)
 			return
 		}
-
 		log.Printf("[OBS] Rendering safe tip: %s tipped %.2f", event.Name, event.Amount)
-
-		// Add your OBS specific logic here (e.g. broadcasting to an OBS specific WebSocket)
 	})
 
 	if err != nil {

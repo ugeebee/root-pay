@@ -14,7 +14,6 @@ type Tip struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
-// TipEvent is the universal payload shared across all NATS microservices
 type TipEvent struct {
 	ClientKey  string    `json:"client_key"`
 	StreamerID string    `json:"streamer_id"`

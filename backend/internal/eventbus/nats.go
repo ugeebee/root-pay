@@ -7,7 +7,6 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Connect establishes a shared connection to your NATS broker
 func Connect() *nats.Conn {
 	natsURL := os.Getenv("NATS_URL")
 	if natsURL == "" {

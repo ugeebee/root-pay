@@ -42,7 +42,6 @@ func CreateTip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Upsert tip using ONLY the client_key
 	query := `
 		INSERT INTO tips (streamer_id, client_key, name, message, amount, status)
 		VALUES ($1, $2, $3, $4, $5, 'PENDING')
@@ -67,7 +66,7 @@ func CreateTip(w http.ResponseWriter, r *http.Request) {
 		isPaid = true
 	}
 
-	streamerVPA := "kavvaie@ybl"
+	streamerVPA := "test@oksbi"
 	upiLink := fmt.Sprintf("upi://pay?pa=%s&pn=RootPay&am=%.2f&cu=INR&tn=%s", streamerVPA, req.Amount, req.ClientKey)
 
 	res := CreateTipResponse{

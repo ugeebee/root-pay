@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/ugeebee/root-pay/backend/internal/discord" // Update to your actual module path
+	"github.com/ugeebee/root-pay/backend/internal/discord"
 )
 
 type SupportRequest struct {
@@ -14,7 +14,6 @@ type SupportRequest struct {
 }
 
 func SubmitSupportTicket(w http.ResponseWriter, r *http.Request) {
-	// Only accept POST requests
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -26,13 +25,11 @@ func SubmitSupportTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate inputs
 	if req.ClientKey == "" || req.UpiID == "" || req.Issue == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
 
-	// Send to Discord
 	err := discord.SendSupportTicket(req.ClientKey, req.UpiID, req.Issue)
 	if err != nil {
 		http.Error(w, "Failed to dispatch ticket to mods", http.StatusInternalServerError)
