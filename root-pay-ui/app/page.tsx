@@ -17,7 +17,7 @@ export default function TipPage() {
   const [isLive, setIsLive] = useState(false);
 
   const presetAmounts = [50, 100, 250, 500, 1000];
-  const BACKEND_URL = 'http://localhost:8080/api'; 
+  const BACKEND_URL = '/api'; 
   const STREAMER_ID = '88888888'; 
 
   const handlePresetClick = (amount: number) => {

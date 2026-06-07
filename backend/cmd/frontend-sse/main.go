@@ -43,7 +43,7 @@ func main() {
 		AllowedOrigins: []string{"http://localhost:3000", "https://xyz.com"},
 	}))
 
-	r.Get("/api/tips/stream", handlers.SSEWait)
+	r.Get("/api/stream", handlers.SSEWait)
 
 	log.Println("Frontend SSE Service listening for browser connections on :8082...")
 	log.Fatal(http.ListenAndServe(":8082", r))

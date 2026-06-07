@@ -14,7 +14,7 @@ function CheckoutGateway() {
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID' | 'ERROR'>('PENDING');
 
   // 1. UPDATED PORT: Pointing to 8082 where your SSE microservice is running
-  const BACKEND_URL = 'http://localhost:8082/api';
+  const BACKEND_URL = '/api';
 
   useEffect(() => {
     if (!clientKey) {
@@ -40,7 +40,7 @@ function CheckoutGateway() {
     // 2. CONNECTION URL
     // This resolves to http://localhost:8082/api/tips/stream?client_key=...
     // If your backend still has the "v1" prefix, change this to: `${BACKEND_URL}/v1/tips/stream?client_key=${clientKey}`
-    const eventSource = new EventSource(`${BACKEND_URL}/tips/stream?client_key=${clientKey}`);
+    const eventSource = new EventSource(`${BACKEND_URL}/stream?client_key=${clientKey}`);
 
     eventSource.onmessage = (event) => {
       try {
