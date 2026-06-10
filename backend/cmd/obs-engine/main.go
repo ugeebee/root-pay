@@ -97,7 +97,7 @@ func main() {
 		AllowedMethods: []string{"GET"},
 	}))
 
-	r.Get("/api/v1/overlay/stream", serveOverlaySSE)
+	r.Get("/api/overlay/stream", serveOverlaySSE)
 
 	log.Println("🎬 OBS Engine listening for Browser Sources on :8083...")
 	log.Fatal(http.ListenAndServe(":8083", r))
