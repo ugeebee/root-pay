@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,11 +29,19 @@ var (
 	dbPool       *pgxpool.Pool
 	jwtSecret    []byte
 	cookieDomain string
+	masterPwd    string
 )
 
 type Claims struct {
 	StreamerID string `json:"streamer_id"`
-	jwt.MapClaims
+	jwt.RegisteredClaims
+}
+
+type PendingClaims struct {
+	DiscordID string `json:"discord_id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	jwt.RegisteredClaims
 }
 
 func main() {
@@ -41,6 +51,11 @@ func main() {
 
 	jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 	cookieDomain = os.Getenv("COOKIE_DOMAIN")
+	masterPwd = os.Getenv("MASTER_PASSWORD")
+
+	if masterPwd == "" {
+		log.Fatal("MASTER_PASSWORD environment variable is not set")
+	}
 
 	store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_SECRET")))
 	store.Options.HttpOnly = true
@@ -62,15 +77,25 @@ func main() {
 		log.Fatalf("Unable to connect to database pool: %v", err)
 	}
 	defer dbPool.Close()
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "https://root.ugbhartariya.com"},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
+
 	r.Route("/api/auth", func(r chi.Router) {
 		r.Get("/{provider}", beginAuth)
 		r.Get("/{provider}/callback", callbackHandler)
 		r.Post("/refresh", refreshHandler)
 		r.Post("/logout", logoutHandler)
+		r.Post("/claim", claimAccountHandler)
 	})
+
 	r.Get("/api/dashboard/stats", verifyAccessMiddleware(func(w http.ResponseWriter, r *http.Request, streamerID string) {
 		fmt.Fprintf(w, "Authenticated secure statistics payload for Streamer: %s", streamerID)
 	}))
@@ -94,19 +119,125 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	discordUser, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Authentication context handshake failed: %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Authentication failed: %v", err), http.StatusBadRequest)
 		return
 	}
-	streamerID, err := getOrCreateStreamer(r.Context(), discordUser.UserID, discordUser.Name, discordUser.Email)
+
+	var streamerID string
+	err = dbPool.QueryRow(r.Context(), "SELECT id FROM streamers WHERE discord_id = $1", discordUser.UserID).Scan(&streamerID)
+
+	if err == nil {
+		if err := issueTokens(w, streamerID); err != nil {
+			http.Error(w, "Token provisioning failed", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "https://adminroot.ugbhartariya.com/dashboard", http.StatusFound)
+		return
+	}
+
+	if err.Error() == "no rows in result set" || errors.Is(err, context.Canceled) {
+
+		_, _ = dbPool.Exec(r.Context(), `
+			INSERT INTO pending_signups (discord_id, display_name, email)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (discord_id) DO NOTHING
+		`, discordUser.UserID, discordUser.Name, discordUser.Email)
+
+		pendingClaims := PendingClaims{
+			DiscordID: discordUser.UserID,
+			Username:  discordUser.Name,
+			Email:     discordUser.Email,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			},
+		}
+		pendingToken := jwt.NewWithClaims(jwt.SigningMethodHS256, pendingClaims)
+		signedPending, _ := pendingToken.SignedString(jwtSecret)
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "root_pending",
+			Value:    signedPending,
+			Path:     "/",
+			Domain:   cookieDomain,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   15 * 60,
+		})
+
+		http.Redirect(w, r, "https://root.ugbhartariya.com/claim", http.StatusFound)
+		return
+	}
+
+	http.Error(w, "Database account mapping failed", http.StatusInternalServerError)
+}
+
+type ClaimRequest struct {
+	MasterPassword string `json:"master_password"`
+}
+
+func claimAccountHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	cookie, err := r.Cookie("root_pending")
 	if err != nil {
-		http.Error(w, "Database account mapping mutation failed", http.StatusInternalServerError)
+		http.Error(w, "Pending session missing or expired. Please login with Discord again.", http.StatusUnauthorized)
 		return
 	}
+
+	token, err := jwt.ParseWithClaims(cookie.Value, &PendingClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		http.Error(w, "Invalid pending session", http.StatusUnauthorized)
+		return
+	}
+
+	claims, ok := token.Claims.(*PendingClaims)
+	if !ok {
+		http.Error(w, "Invalid claims", http.StatusUnauthorized)
+		return
+	}
+
+	var req ClaimRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.MasterPassword != masterPwd {
+		http.Error(w, "Incorrect master password", http.StatusUnauthorized)
+		return
+	}
+
+	streamerID := generateCleanID()
+	overlayToken := generateSecureToken()
+
+	insertQuery := `
+		INSERT INTO streamers (id, discord_id, display_name, email, overlayToken)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	_, err = dbPool.Exec(r.Context(), insertQuery, streamerID, claims.DiscordID, claims.Username, claims.Email, overlayToken)
+	if err != nil {
+		http.Error(w, "Failed to create account", http.StatusInternalServerError)
+		return
+	}
+
+	_, _ = dbPool.Exec(r.Context(), "DELETE FROM pending_signups WHERE discord_id = $1", claims.DiscordID)
+
 	if err := issueTokens(w, streamerID); err != nil {
 		http.Error(w, "Token provisioning failed", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "https://adminroot.ugbhartariya.com/dashboard", http.StatusFound)
+
+	clearCookie(w, "root_pending")
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "account_claimed"}`))
 }
 
 func refreshHandler(w http.ResponseWriter, r *http.Request) {
@@ -155,8 +286,8 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 func issueTokens(w http.ResponseWriter, streamerID string) error {
 	accessClaims := Claims{
 		StreamerID: streamerID,
-		MapClaims: jwt.MapClaims{
-			"exp": time.Now().Add(15 * time.Minute).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 		},
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
@@ -164,10 +295,11 @@ func issueTokens(w http.ResponseWriter, streamerID string) error {
 	if err != nil {
 		return err
 	}
+
 	refreshClaims := Claims{
 		StreamerID: streamerID,
-		MapClaims: jwt.MapClaims{
-			"exp": time.Now().Add(7 * 24 * time.Hour).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
@@ -175,6 +307,7 @@ func issueTokens(w http.ResponseWriter, streamerID string) error {
 	if err != nil {
 		return err
 	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "root_access",
 		Value:    signedAccess,
@@ -209,27 +342,6 @@ func clearCookie(w http.ResponseWriter, name string) {
 		Secure:   true,
 		MaxAge:   -1,
 	})
-}
-
-func getOrCreateStreamer(ctx context.Context, discordID, username, email string) (string, error) {
-	var streamerID string
-	err := dbPool.QueryRow(ctx, "SELECT id FROM streamers WHERE discord_id = $1", discordID).Scan(&streamerID)
-	if err == nil {
-		return streamerID, nil
-	}
-	if err.Error() == "no rows in result set" || errors.Is(err, context.Canceled) {
-		streamerID = generateCleanID()
-		overlayToken := generateSecureToken()
-
-		insertQuery := `
-			INSERT INTO streamers (id, discord_id, display_name, email, overlay_token)
-			VALUES ($1, $2, $3, $4, $5)
-		`
-		_, insertErr := dbPool.Exec(ctx, insertQuery, streamerID, discordID, username, email, overlayToken)
-		return streamerID, insertErr
-	}
-
-	return "", err
 }
 
 func generateCleanID() string {

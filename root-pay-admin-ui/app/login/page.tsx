@@ -10,11 +10,11 @@ export default function LoginPage() {
     <div className="bg-[#09090B] text-[#e5e1e4] flex flex-col min-h-screen font-sans overflow-hidden">
       <header className="fixed top-0 left-0 w-full z-50 bg-transparent flex justify-between items-center px-12 py-6 max-w-[1280px] mx-auto">
         <div className="font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#fbabff] to-[#d0bcff] text-2xl">
-          Root-Pay
+          Tip Root
         </div>
         <div className="flex gap-6 items-center">
-          <a className="text-[#d6c0d3] font-medium hover:text-[#fbabff] transition-colors duration-200" href="#">Support</a>
-          <a className="text-[#fbabff] font-bold border-b-2 border-[#fbabff] pb-1" href="#">Sign Up</a>
+          <a className="text-[#d6c0d3] font-medium hover:text-[#fbabff] transition-colors duration-200" href="https://root.ugbhartariya.com/contact">Support</a>
+          <a className="text-[#fbabff] font-bold border-b-2 border-[#fbabff] pb-1" href="#">Sign In</a>
         </div>
       </header>
 
@@ -24,7 +24,7 @@ export default function LoginPage() {
 
         <div className="backdrop-blur-xl border border-white/10 bg-white/5 w-full max-w-[400px] p-12 rounded-xl z-10">
           <div className="text-center mb-12">
-            <div className="font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#fbabff] to-[#d0bcff] text-lg mb-2">Root-Pay</div>
+            <div className="font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#fbabff] to-[#d0bcff] text-lg mb-2">Tip Root</div>
             <h1 className="text-2xl font-bold mb-2">Welcome Back</h1>
             <p className="text-[#9f8b9d] text-sm">Sign in to manage your stream.</p>
           </div>
