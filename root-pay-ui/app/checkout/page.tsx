@@ -100,7 +100,7 @@ function CheckoutGateway() {
             <CheckCircle2 size={72} className="text-emerald-500 mb-4" />
             <h3 className="text-2xl font-bold text-gray-900 mb-2">Payment Verified</h3>
             <p className="text-gray-500 mb-8">Your tip is securely routed to the stream overlay.</p>
-            <button onClick={() => router.push('/')} className="w-full bg-gray-100 text-gray-900 font-semibold py-3.5 rounded-xl hover:bg-gray-200 transition-colors">
+            <button onClick={() => router.back()} className="w-full bg-gray-100 text-gray-900 font-semibold py-3.5 rounded-xl hover:bg-gray-200 transition-colors">
               Send Another Tip
             </button>
           </div>
