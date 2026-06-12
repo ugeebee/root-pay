@@ -165,7 +165,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 			MaxAge:   15 * 60,
 		})
 
-		http.Redirect(w, r, "https://root.ugbhartariya.com/claim", http.StatusFound)
+		http.Redirect(w, r, "https://adminroot.ugbhartariya.com/claim", http.StatusFound)
 		return
 	}
 
