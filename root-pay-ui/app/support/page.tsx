@@ -74,10 +74,10 @@ function SupportEngine() {
     <div className="min-h-screen bg-[#F8F9FB] font-sans text-gray-900 pb-20">
       {/* Basic Navbar */}
       <nav className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100">
-        <Link href="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
+        <button onClick={() => router.back()} className="flex items-center gap-4 hover:opacity-80 transition-opacity">
           <ArrowLeft size={20} className="text-gray-500" />
-          <div className="text-xl font-bold tracking-tight text-[#6D28D9]">notBruce</div>
-        </Link>
+          <div className="text-xl font-bold tracking-tight text-[#6D28D9]">Tip Root</div>
+        </button>
       </nav>
 
       <main className="max-w-4xl mx-auto px-4 py-12">
