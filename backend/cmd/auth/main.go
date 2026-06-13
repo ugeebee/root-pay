@@ -96,6 +96,10 @@ func main() {
 		r.Post("/claim", claimAccountHandler)
 	})
 
+	r.Get("/api/dashboard/token", verifyAccessMiddleware(getOverlayTokenHandler))
+	r.Get("/api/dashboard/settings", verifyAccessMiddleware(getDashboardSettingsHandler))
+	r.Post("/api/dashboard/settings", verifyAccessMiddleware(updateDashboardSettingsHandler))
+	r.Post("/api/dashboard/token/rotate", verifyAccessMiddleware(rotateTokenHandler))
 	r.Get("/api/dashboard/stats", verifyAccessMiddleware(func(w http.ResponseWriter, r *http.Request, streamerID string) {
 		fmt.Fprintf(w, "Authenticated secure statistics payload for Streamer: %s", streamerID)
 	}))
