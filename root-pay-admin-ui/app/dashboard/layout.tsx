@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <LayoutDashboard size={20} />
             Command Center
           </Link>
-          <Link href="/dashboard/overlay" className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${pathname === '/dashboard/overlay' ? 'text-[#fbabff] bg-white/5 border border-white/5' : 'text-[#9f8b9d] hover:text-[#fbabff] hover:bg-white/5'}`}>
+          <Link href="/dashboard/overlay" className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${pathname === '/dashboard/obs-alerts' ? 'text-[#fbabff] bg-white/5 border border-white/5' : 'text-[#9f8b9d] hover:text-[#fbabff] hover:bg-white/5'}`}>
             <MonitorPlay size={20} />
             OBS Alerts
           </Link>
@@ -55,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex-1 overflow-hidden">
               <p className="text-sm font-bold text-white truncate">Verified Streamer</p>
             </div>
-            <button 
+            <button
               onClick={handleLogout}
               className="text-[#9f8b9d] hover:text-[#ffb4ab] transition-colors"
               title="Logout"
