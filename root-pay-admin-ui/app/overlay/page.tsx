@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { HeartHandshake } from 'lucide-react';
 
 interface TipAlert {
   client_key: string;
@@ -10,169 +11,105 @@ interface TipAlert {
   message: string;
 }
 
-const BASE_RETRY_MS = 1_000;   // 1 s initial backoff
-const MAX_RETRY_MS  = 30_000;  // 30 s cap
-const DISPLAY_MS    = 5_000;   // alert on-screen duration
-const EXIT_MS       = 700;     // fade-out duration (must match CSS transition)
-
 function OverlayEngine() {
-  const searchParams  = useSearchParams();
-  const token         = searchParams.get('token');
-  const streamerID    = searchParams.get('streamer_id');
+  const searchParams = useSearchParams();
+  const streamerId = searchParams.get('streamer_id');
 
-  const [queue, setQueue]           = useState<TipAlert[]>([]);
+  const [queue, setQueue] = useState<TipAlert[]>([]);
   const [currentAlert, setCurrentAlert] = useState<TipAlert | null>(null);
-  const [isVisible, setIsVisible]   = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
-  // Tracks retry delay across reconnect attempts without triggering renders.
-  const retryDelayRef  = useRef(BASE_RETRY_MS);
-  // Lets the cleanup function cancel a scheduled retry when the component unmounts.
-  const retryTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 1. Connect to the Go OBS Engine
+  useEffect(() => {
+    if (!streamerId) return;
 
-  // ─── 1. SSE connection with exponential-backoff reconnect ───────────────────
-  const connectToStream = useCallback(() => {
-    if (!token || !streamerID) return;
+    // Connect to Port 8083 (The OBS Engine)
+    const eventSource = new EventSource(`/api/overlay/stream?streamer_id=${streamerId}`);
 
-    const abortController = new AbortController();
-
-    const run = async () => {
+    eventSource.onmessage = (event) => {
       try {
-        const response = await fetch(
-          `https://api.ugbhartariya.com/api/overlay/stream?streamer_id=${streamerID}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            signal: abortController.signal,
-          }
-        );
-
-        if (!response.ok) {
-          // 401 / 403: credentials are wrong — don't retry, it won't help.
-          if (response.status === 401 || response.status === 403) {
-            console.error('[Overlay] Auth failed, will not retry.');
-            return;
-          }
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        // Connected successfully — reset backoff.
-        retryDelayRef.current = BASE_RETRY_MS;
-
-        const reader  = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let   buffer  = '';
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const messages = buffer.split('\n\n');
-            buffer = messages.pop() ?? '';
-
-            for (const msg of messages) {
-              if (msg.startsWith('data: ')) {
-                try {
-                  const newTip: TipAlert = JSON.parse(msg.substring(6));
-                  setQueue((prev) => [...prev, newTip]);
-                } catch {
-                  // Malformed JSON — skip silently.
-                }
-              }
-              // Heartbeat lines (": heartbeat") are ignored automatically.
-            }
-          }
-        }
-
-        // Stream ended cleanly (server closed). Fall through to retry.
-        console.warn('[Overlay] Stream ended, scheduling reconnect…');
-
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          // Intentional teardown — no retry.
-          return;
-        }
-        console.error('[Overlay] Stream error:', err);
-      }
-
-      // ── Schedule retry with exponential backoff ──────────────────────────
-      const delay = retryDelayRef.current;
-      console.info(`[Overlay] Reconnecting in ${delay}ms…`);
-      retryTimerRef.current = setTimeout(() => {
-        // Double the delay, but cap at MAX_RETRY_MS.
-        retryDelayRef.current = Math.min(delay * 2, MAX_RETRY_MS);
-        run(); // re-enter the same async function (new fetch, same AbortController)
-      }, delay);
-    };
-
-    run();
-
-    // Cleanup: abort the in-flight fetch and cancel any pending retry.
-    return () => {
-      abortController.abort();
-      if (retryTimerRef.current !== null) {
-        clearTimeout(retryTimerRef.current);
+        const newTip = JSON.parse(event.data);
+        // Add incoming tips to the queue
+        setQueue((prev) => [...prev, newTip]);
+      } catch (err) {
+        console.error('Failed to parse overlay event:', err);
       }
     };
-  }, [token, streamerID]);
 
+    return () => eventSource.close();
+  }, [streamerId]);
+
+  // 2. The Queue Manager (Plays animations sequentially)
   useEffect(() => {
-    const cleanup = connectToStream();
-    return () => cleanup?.();
-  }, [connectToStream]);
+    if (queue.length > 0 && !currentAlert) {
+      // Pull the first tip from the queue
+      const nextTip = queue[0];
+      setCurrentAlert(nextTip);
+      setIsVisible(true);
 
-  // ─── 2. Sequential queue manager ────────────────────────────────────────────
-  useEffect(() => {
-    if (queue.length === 0 || currentAlert) return;
+      // Remove it from the queue
+      setQueue((prev) => prev.slice(1));
 
-    const [nextTip, ...rest] = queue;
-    setQueue(rest);
-    setCurrentAlert(nextTip);
-    setIsVisible(true);
-
-    const hideTimer = setTimeout(() => {
-      setIsVisible(false);
-      const clearTimer = setTimeout(() => setCurrentAlert(null), EXIT_MS);
-      return () => clearTimeout(clearTimer);
-    }, DISPLAY_MS);
-
-    return () => clearTimeout(hideTimer);
+      // Hide the alert after 5 seconds, wait 1 second, then process the next
+      setTimeout(() => {
+        setIsVisible(false);
+        setTimeout(() => {
+          setCurrentAlert(null);
+        }, 1000); // 1s cooldown between alerts
+      }, 5000); // 5s display time
+    }
   }, [queue, currentAlert]);
 
-  if (!token || !streamerID) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-transparent">
-        <p className="text-white text-xl opacity-50">Missing Parameters</p>
-      </div>
-    );
+  if (!streamerId) {
+    return <div className="text-white p-4 font-mono">⚠️ Missing streamer_id parameter</div>;
   }
 
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-transparent">
+    // The background must be completely transparent for OBS
+    <div className="w-screen h-screen overflow-hidden flex items-center justify-center bg-transparent font-sans">
+
+      {/* The Alert Box */}
       <div
-        style={{ transition: `opacity ${EXIT_MS}ms ease` }}
-        className={isVisible ? 'opacity-100' : 'opacity-0'}
+        className={`
+          flex flex-col items-center justify-center text-center max-w-xl
+          transition-all duration-700 ease-in-out transform
+          ${isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-10'}
+        `}
       >
         {currentAlert && (
-          <div className="text-center">
-            <h1 className="text-5xl text-white font-bold drop-shadow-lg">
-              {currentAlert.name} tipped ₹{currentAlert.amount}!
+          <>
+            {/* Pulsing Icon */}
+            <div className="w-24 h-24 bg-gradient-to-tr from-[#6D28D9] to-[#9333EA] rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(109,40,217,0.6)] mb-6 animate-pulse">
+              <HeartHandshake size={48} className="text-white" />
+            </div>
+
+            {/* Title */}
+            <h1 className="text-5xl font-extrabold text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] mb-2 tracking-tight">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                {currentAlert.name}
+              </span>
+              {' '}tipped ₹{currentAlert.amount}!
             </h1>
+
+            {/* Message */}
             {currentAlert.message && (
-              <p className="text-2xl text-gray-100 mt-4 drop-shadow">
-                &ldquo;{currentAlert.message}&rdquo;
-              </p>
+              <div className="mt-4 bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-2xl">
+                <p className="text-2xl text-gray-100 font-medium leading-relaxed drop-shadow-md">
+                  "{currentAlert.message}"
+                </p>
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
+
     </div>
   );
 }
 
 export default function OverlayPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="bg-transparent w-screen h-screen"></div>}>
       <OverlayEngine />
     </Suspense>
   );
