@@ -20,6 +20,7 @@ type StreamerResponse struct {
 	StreamerTag string       `json:"streamer_tag"`
 	Support     SupportStats `json:"support"`
 	LiveLink    string       `json:"live_link"`
+	UpiID       string       `json:"upi_id"`
 }
 
 func GetStreamer(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +30,7 @@ func GetStreamer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var tag, title, liveLink string
+	var tag, title, liveLink, upiID string
 	var total, completed float64
 
 	query := `
@@ -38,11 +39,12 @@ func GetStreamer(w http.ResponseWriter, r *http.Request) {
 			COALESCE(support_title, 'Support the Stream'), 
 			COALESCE(support_total, 0.00), 
 			COALESCE(support_completed, 0.00), 
-			COALESCE(live_link, '') 
+			COALESCE(live_link, ''),
+			COALESCE(upi_id, '')
 		FROM streamers 
 		WHERE id = $1`
 
-	err := database.DB.QueryRow(context.Background(), query, streamerID).Scan(&tag, &title, &total, &completed, &liveLink)
+	err := database.DB.QueryRow(context.Background(), query, streamerID).Scan(&tag, &title, &total, &completed, &liveLink, &upiID)
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -62,6 +64,7 @@ func GetStreamer(w http.ResponseWriter, r *http.Request) {
 			Completed: completed,
 		},
 		LiveLink: liveLink,
+		UpiID:    upiID,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
