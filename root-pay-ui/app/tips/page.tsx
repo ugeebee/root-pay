@@ -1,3 +1,7 @@
+const [idempotencyKey, setIdempotencyKey] = useState('');
+  useEffect(() => {
+    setIdempotencyKey(crypto.randomUUID());
+  }, []);
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -65,17 +69,6 @@ function TipsEngine() {
     setCustomAmount('');
   };
 
-  const generateClientKey = (): string => {
-    const pad = (n: number, w: number) => n.toString().padStart(w, '0');
-    const d = new Date();
-    const timestamp = `${pad(d.getDate(), 2)}${pad(d.getMonth() + 1, 2)}${d.getFullYear()}${pad(d.getHours(), 2)}${pad(d.getMinutes(), 2)}${pad(d.getSeconds(), 2)}${pad(d.getMilliseconds(), 3)}`;
-    const entropy = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
-
-    // Use the fetched streamer ID or default to 8 zeros if something fails
-    const activeStreamerId = streamerData?.streamerID || '00000000';
-    return `${activeStreamerId}${timestamp}${entropy}`;
-  };
-
   const handleInitializePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalAmount = selectedAmount || parseFloat(customAmount);
@@ -85,14 +78,13 @@ function TipsEngine() {
       return;
     }
 
-    if (!streamerData?.streamerID) {
-      setError('Streamer data is missing. Cannot process payment.');
+    if (!streamerData?.streamerID || !idempotencyKey) {
+      setError('Streamer data is missing or session is initializing. Please wait.');
       return;
     }
 
     setLoading(true);
     setError('');
-    const clientKey = generateClientKey();
 
     try {
       const res = await fetch(`${BACKEND_URL}/tips`, {
@@ -100,7 +92,7 @@ function TipsEngine() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           streamer_id: streamerData.streamerID,
-          client_key: clientKey,
+          request_id: idempotencyKey, // Send the Idempotency Key
           name,
           message,
           amount: finalAmount,
@@ -110,6 +102,10 @@ function TipsEngine() {
       if (!res.ok) throw new Error(await res.text() || 'Failed to initialize gateway.');
 
       const data = await res.json();
+
+      // Extract BOTH keys from the backend response
+      const secureServerKey = data.client_key;
+      const supportKey = data.support_key; 
 
       if (data.is_paid) {
         setError('This session is stale. Please try again.');
@@ -122,7 +118,8 @@ function TipsEngine() {
 
       try {
         const newTip = {
-          clientKey: clientKey,
+          clientKey: secureServerKey, 
+          supportKey: supportKey, // Save Support Key to local history
           message: message || 'No message provided',
           date: new Date().toISOString()
         };
@@ -137,7 +134,8 @@ function TipsEngine() {
         console.error("Failed to save transaction history locally", storageError);
       }
 
-      router.push(`/checkout?client_key=${clientKey}`);
+      // Route to checkout passing BOTH keys in the URL
+      router.push(`/checkout?client_key=${secureServerKey}&support_key=${supportKey}`);
 
     } catch (err: any) {
       setError(err.message || 'Could not connect to Go backend.');

@@ -7,6 +7,7 @@ import { LifeBuoy, Hash, MessageSquare, CheckCircle2, ArrowLeft, Clock, AlertCir
 
 interface Transaction {
   clientKey: string;
+  supportKey?: string;
   message: string;
   date: string;
 }
@@ -14,7 +15,7 @@ interface Transaction {
 function SupportEngine() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const clientKeyParam = searchParams.get('client_key');
+  const supportKeyParam = searchParams.get('support_key');
 
   const [history, setHistory] = useState<Transaction[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -40,7 +41,7 @@ function SupportEngine() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientKeyParam || !issue || !upiId) {
+    if (!supportKeyParam || !issue || !upiId) {
       setErrorMsg('UPI ID and Issue description are required.');
       setStatus('ERROR');
       return;
@@ -51,7 +52,7 @@ function SupportEngine() {
       const res = await fetch('/api/support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_key: clientKeyParam, upi_id: upiId, issue }),
+        body: JSON.stringify({ support_key: supportKeyParam, upi_id: upiId, issue }),
       });
 
       if (!res.ok) throw new Error('Failed to send support ticket. Please try again.');
@@ -84,7 +85,7 @@ function SupportEngine() {
         <div className="bg-white rounded-2xl p-8 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] relative">
           
           {/* STATE 1: THE HISTORY LEDGER */}
-          {!clientKeyParam && isLoaded && (
+          {!supportKeyParam && isLoaded && (
             <div className="animate-in fade-in duration-300">
               <div className="flex items-center gap-4 mb-8 border-b border-gray-100 pb-6">
                 <div className="w-12 h-12 bg-purple-50 text-[#6D28D9] rounded-xl flex items-center justify-center">
@@ -116,12 +117,12 @@ function SupportEngine() {
                       {history.map((tx, idx) => (
                         <tr 
                           key={idx} 
-                          onClick={() => router.push(`/support?client_key=${tx.clientKey}`)}
+                          onClick={() => router.push(`/support?support_key=${tx.supportKey}`)}
                           className="hover:bg-purple-50 cursor-pointer transition-colors group"
                         >
                           <td className="px-6 py-4 text-gray-600">{formatDate(tx.date)}</td>
                           <td className="px-6 py-4 font-mono text-xs text-gray-800 group-hover:text-[#6D28D9] transition-colors">
-                            {tx.clientKey.substring(0, 16)}...
+                            {tx.supportKey}...
                           </td>
                           <td className="px-6 py-4 text-gray-500 truncate max-w-[300px]">
                             {tx.message}
@@ -136,7 +137,7 @@ function SupportEngine() {
           )}
 
           {/* STATE 2: THE SUPPORT TICKET FORM */}
-          {clientKeyParam && (
+          {supportKeyParam && (
             <div className="animate-in slide-in-from-right-4 duration-300">
               <button 
                 onClick={() => router.push('/support')} 
@@ -178,7 +179,7 @@ function SupportEngine() {
                     <div className="relative">
                       <input 
                         type="text" 
-                        value={clientKeyParam} 
+                        value={supportKeyParam} 
                         disabled 
                         className="w-full bg-gray-100 border border-gray-200 rounded-xl py-3.5 pl-11 pr-4 text-sm text-gray-500 font-mono cursor-not-allowed" 
                       />

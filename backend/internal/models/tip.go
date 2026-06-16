@@ -6,6 +6,7 @@ type Tip struct {
 	ID         int       `json:"-"`
 	StreamerID string    `json:"streamer_id"`
 	ClientKey  string    `json:"client_key"`
+	SupportKey string    `json:"support_key"`
 	Name       string    `json:"name"`
 	Message    string    `json:"message"`
 	Amount     float64   `json:"amount"`

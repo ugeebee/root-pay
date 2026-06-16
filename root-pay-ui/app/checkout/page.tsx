@@ -6,9 +6,10 @@ import { QRCodeSVG } from 'qrcode.react';
 import { CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 
 function CheckoutGateway() {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const clientKey = searchParams.get('client_key');
+  const supportKey = searchParams.get('support_key');
 
   const [paymentData, setPaymentData] = useState<{ upiDeeplink: string } | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID' | 'ERROR'>('PENDING');
@@ -91,7 +92,7 @@ function CheckoutGateway() {
               <div className="w-2 h-2 rounded-full bg-[#6D28D9] animate-ping"></div>
               <span className="text-sm font-medium">Waiting for ledger verification...</span>
             </div>
-            <p className="text-xs text-gray-400 mt-4 break-all">ID: {clientKey}</p>
+            <p className="text-xs text-gray-400 mt-4 break-all">Support ID: {supportKey}</p>
           </div>
         )}
 
