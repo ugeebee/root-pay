@@ -1,7 +1,3 @@
-const [idempotencyKey, setIdempotencyKey] = useState('');
-  useEffect(() => {
-    setIdempotencyKey(crypto.randomUUID());
-  }, []);
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -35,6 +31,11 @@ function TipsEngine() {
   const [customAmount, setCustomAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [idempotencyKey, setIdempotencyKey] = useState('');
+  useEffect(() => {
+    setIdempotencyKey(crypto.randomUUID());
+  }, []);
 
   const presetAmounts = [50, 100, 250, 500, 1000];
   const BACKEND_URL = '/api';
