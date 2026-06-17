@@ -8,9 +8,9 @@ import (
 )
 
 type SupportRequest struct {
-	ClientKey string `json:"client_key"`
-	UpiID     string `json:"upi_id"`
-	Issue     string `json:"issue"`
+	SupportKey string `json:"support_key"`
+	UpiID      string `json:"upi_id"`
+	Issue      string `json:"issue"`
 }
 
 func SubmitSupportTicket(w http.ResponseWriter, r *http.Request) {
@@ -25,12 +25,12 @@ func SubmitSupportTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ClientKey == "" || req.UpiID == "" || req.Issue == "" {
+	if req.SupportKey == "" || req.UpiID == "" || req.Issue == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
 
-	err := discord.SendSupportTicket(req.ClientKey, req.UpiID, req.Issue)
+	err := discord.SendSupportTicket(req.SupportKey, req.UpiID, req.Issue)
 	if err != nil {
 		http.Error(w, "Failed to dispatch ticket to mods", http.StatusInternalServerError)
 		return
