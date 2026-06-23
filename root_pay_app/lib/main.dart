@@ -104,6 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     "com.google.android.apps.nbu.paisa.user",
     "com.phonepe.app",
     "net.one97.paytm",
+    "com.whatsapp",
   ];
 
   @override

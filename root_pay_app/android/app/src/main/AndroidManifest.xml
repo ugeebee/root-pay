@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA"/>
     <application
-        android:label="root_pay_app"
+        android:label="Tip Root SPC"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- Add this block for Notification Listener Service -->
