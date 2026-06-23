@@ -57,7 +57,7 @@ This guide covers deploying Tip Root directly to a Linux server using PM2 and Bu
     cd backend
     mkdir -p bin
 
-    go build -o bin/auth ./cmd/auth/main.go
+    go build -o bin/auth ./cmd/auth/*.go
     go build -o bin/ingestion ./cmd/ingestion/main.go
     go build -o bin/moderation ./cmd/moderation/main.go
     go build -o bin/obs-engine ./cmd/obs-engine/main.go
