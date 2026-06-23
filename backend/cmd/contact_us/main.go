@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/ugeebee/root-pay/backend/internal/logger"
+	"github.com/ugeebee/tip-root/backend/internal/logger"
 )
 
 var db *sql.DB

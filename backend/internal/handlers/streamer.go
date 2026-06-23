@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/ugeebee/root-pay/backend/internal/database"
+	"github.com/ugeebee/tip-root/backend/internal/database"
 )
 
 type SupportStats struct {

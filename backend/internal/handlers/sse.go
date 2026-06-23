@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ugeebee/root-pay/backend/internal/sse"
+	"github.com/ugeebee/tip-root/backend/internal/sse"
 )
 
 func SSEWait(w http.ResponseWriter, r *http.Request) {

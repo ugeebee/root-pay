@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/ugeebee/root-pay/backend/internal/discord"
+	"github.com/ugeebee/tip-root/backend/internal/discord"
 )
 
 type SupportRequest struct {

@@ -24,7 +24,7 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/discord"
-	"github.com/ugeebee/root-pay/backend/internal/logger"
+	"github.com/ugeebee/tip-root/backend/internal/logger"
 )
 
 var (

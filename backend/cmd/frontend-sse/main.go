@@ -10,11 +10,11 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
-	"github.com/ugeebee/root-pay/backend/internal/eventbus"
-	"github.com/ugeebee/root-pay/backend/internal/handlers"
-	"github.com/ugeebee/root-pay/backend/internal/logger"
-	"github.com/ugeebee/root-pay/backend/internal/models"
-	"github.com/ugeebee/root-pay/backend/internal/sse"
+	"github.com/ugeebee/tip-root/backend/internal/eventbus"
+	"github.com/ugeebee/tip-root/backend/internal/handlers"
+	"github.com/ugeebee/tip-root/backend/internal/logger"
+	"github.com/ugeebee/tip-root/backend/internal/models"
+	"github.com/ugeebee/tip-root/backend/internal/sse"
 )
 
 func main() {

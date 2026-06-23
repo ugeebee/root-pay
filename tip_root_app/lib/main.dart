@@ -75,7 +75,7 @@ class RootPayApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Root-Pay Trigger',
+      title: 'tip-root Trigger',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -179,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _startListening() {
-    print("🎧 Root-Pay is now listening for UPI notifications...");
+    print("🎧 tip-root is now listening for UPI notifications...");
     final RegExp keyRegExp = RegExp(r'\b\d{32}\b');
 
     NotificationListenerService.notificationsStream.listen((event) async {
@@ -231,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Root-Pay Engine', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('tip-root Engine', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),

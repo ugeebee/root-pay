@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ugeebee/root-pay/backend/internal/database"
+	"github.com/ugeebee/tip-root/backend/internal/database"
 )
 
 type CreateTipRequest struct {

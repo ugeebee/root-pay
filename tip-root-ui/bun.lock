@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "root-pay-ui",
+      "name": "tip-root-ui",
       "dependencies": {
         "lucide-react": "^1.17.0",
         "next": "16.2.6",

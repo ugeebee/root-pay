@@ -1,4 +1,4 @@
-module github.com/ugeebee/root-pay/backend
+module github.com/ugeebee/tip-root/backend
 
 go 1.25.5
 

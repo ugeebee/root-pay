@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/ugeebee/root-pay/backend/internal/models"
+	"github.com/ugeebee/tip-root/backend/internal/models"
 )
 
 var (
